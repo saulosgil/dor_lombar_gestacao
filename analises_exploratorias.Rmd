@@ -1,3 +1,7 @@
+---
+output: github_document
+---
+
 # Análises Exploratórias - *Dor lombar e ganho de peso na gestação*
 
 ### Prof. Patricia Colombo
