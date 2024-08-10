@@ -1,0 +1,177 @@
+# Análises Exploratórias - *Dor lombar e ganho de peso na gestação*
+
+### Prof. Patricia Colombo
+
+
+## Pacotes
+```{r include=FALSE}
+library(readxl)
+library(tidyverse)
+library(sjPlot)
+```
+
+## Carregar os dados
+```{r}
+dados_pat_colombo <- read_excel("dados_pat_colombo.xlsx")
+```
+
+## Filtra as linhas com apenas as observações
+```{r}
+df <- dados_pat_colombo[1:53,]
+```
+
+## Ajusta as variáveis 
+```{r}
+df <- 
+  df |> 
+  mutate(
+    score_dor = as.numeric(score_dor),
+    imc_pre_gestacional = as.numeric(imc_pre_gestacional),
+    imc_pos_gestacional = as.numeric(imc_pos_gestacional),
+    'estado_conjugal_com _1_sem_2' = as.factor('estado_conjugal_com _1_sem_2'),
+    renda = as.factor(renda),
+    uso_medicamento_sim_1_n_2 = as.factor(uso_medicamento_sim_1_n_2),
+    tabaco_sim_1_n_2 = as.factor(tabaco_sim_1_n_2),
+    atvfisica_sim_1_n_2 = as.factor(atvfisica_sim_1_n_2)
+  ) |>
+  as.data.frame()
+```
+
+## Resumo dos dados
+### Tipos de variáveis
+```{r}
+glimpse(df)
+```
+
+### Análise descritiva
+```{r}
+skimr::skim_without_charts(df)
+
+```
+
+
+## Prevalência de dor lombar
+```{r}
+freq_lombar <- df |> 
+  group_by(local_dor)  |> 
+  summarise(n = n()) |>  
+  mutate(freq = n / sum(n) * 100) |>  
+  ungroup() |> 
+  arrange(freq)
+
+freq_lombar
+```
+
+### Gráfico - *Prevalência de dor lombar*
+```{r}
+freq_lombar |> 
+  ggplot(aes(x = local_dor,
+             y = freq, 
+             fill = local_dor,
+             label = round(freq, 1))) +
+  geom_col() +
+  geom_text(position = position_stack(vjust = 0.5)) +
+  labs(title = "Prevalência de dor lombar") +
+  theme_classic()
+```
+
+## Prevalência da classificação de dor
+```{r}
+freq_class_dor <- df |>
+  group_by(classificacao)  |> 
+  summarise(n = n()) |>  
+  mutate(freq = n / sum(n) * 100) |>  
+  ungroup() |> 
+  arrange(freq)
+
+freq_class_dor
+```
+
+### Gráfico - *Prevalência da Classificação da dor lombar*
+```{r}
+freq_class_dor |>
+  ggplot(aes(x = fct_reorder(classificacao, freq,.desc = TRUE), classificacao,
+             y = freq,
+             fill = classificacao,
+             label = round(freq, 1))) +
+  geom_col() +
+  geom_text(position = position_stack(vjust = 0.5)) +
+  xlab("") +
+  labs(title = "Prevalência da Classificação da dor lombar") +
+  theme_classic()
+
+```
+
+## Gráfico de dispersão
+```{r}
+df |> 
+  ggplot(aes(x = ganho_peso_gestacional,
+             y = score_dor,
+             colour = classificacao)) +
+  geom_point(size = 2)+
+  labs(title = "Gráfigo de dispersão",
+       subtitle = "Escore de dor vs. ganho de peso") +
+  theme_classic()
+
+```
+
+## Gráfico de dispersão - fit
+```{r}
+df |> 
+  ggplot(aes(x = ganho_peso_gestacional,
+             y = score_dor)) +
+  geom_point(size = 2)+
+  geom_smooth(method = "lm")+
+  labs(title = "Gráfigo de dispersão",
+       subtitle = "Escore de dor vs. ganho de peso")+
+  theme_classic()
+
+```
+## Correlações
+```{r fig.height=11, fig.width=11}
+df_numeric <- df |> 
+  select(where(is.numeric)) 
+
+M <- cor(df_numeric)
+
+resultado <- corrplot::cor.mtest(df_numeric, conf.level = .95)
+
+corrplot::corrplot(M,
+                   p.mat = resultado$p,
+                   type="upper", 
+                   method = "color",
+                   sig.level = c(.001,.01,.05),
+                   pch.cex = .9,
+                   insig = "label_sig",
+                   pch.col = "white", 
+                   order="AOE")
+```
+
+# Modelos de regressão linear
+## Modelo não ajustado
+```{r}
+model <- lm(score_dor ~ ganho_peso_gestacional, df)
+
+sjPlot::tab_model(model)
+```
+
+## Modelo ajustado por idade, imc pré gestacional, atv. física (O que mais?)
+```{r}
+modelo_ajustado <- lm(score_dor ~ ganho_peso_gestacional + idade + imc_pre_gestacional + atvfisica_sim_1_n_2, df)
+
+sjPlot::tab_model(modelo_ajustado)
+```
+
+# Considerações finais
+
+As análises preliminares sugerem:
+
+1. Elevada prevalência de dor lombar (77%);
+
+2. Uma relação linear entre *ganho de peso* e *dor lombar*.
+
+3. O modelo ajustado por idade, IMC pré gestacional e atividade física sugere que mesmo após os ajustes a relação ainda é significante, indicando que o *ganho de peso* é um preditor significante independente das covariaveis incluídas no modelo. 
+
+Contudo, o modelo ajustado ainda me parece bastante simples e é necessário ver com as especialistas (Pat e Francisca) a possibilidade de incluir outras covariáveis no modelo.
+
+
