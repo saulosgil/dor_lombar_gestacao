@@ -13,7 +13,7 @@
 - O dataset foi coletado pela aluna de pós-graduação da Prof. Patricia Colombo (UNISA)
 
 
-## 📑 Reference
+## 📑 Referências
 - Este estudo ainda está em andamento.
 
 👨‍💻 Made by Saulo Gil.
