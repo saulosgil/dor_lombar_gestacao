@@ -1,3 +1,9 @@
+---
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
 
 # Análises Exploratórias - *Dor lombar e ganho de peso na gestação*
 
