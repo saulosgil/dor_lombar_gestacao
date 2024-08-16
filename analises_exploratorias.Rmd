@@ -82,6 +82,7 @@ freq_lombar |>
 ## Prevalência da classificação de dor
 ```{r}
 freq_class_dor <- df |>
+  filter(score_dor != 0) |> 
   group_by(classificacao)  |> 
   summarise(n = n()) |>  
   mutate(freq = n / sum(n) * 100) |>  
@@ -108,7 +109,8 @@ freq_class_dor |>
 
 ## Gráfico de dispersão
 ```{r}
-df |> 
+df |>   
+  filter(score_dor != 0) |> 
   ggplot(aes(x = ganho_peso_gestacional,
              y = score_dor,
              colour = classificacao)) +
@@ -121,7 +123,8 @@ df |>
 
 ## Gráfico de dispersão - fit
 ```{r}
-df |> 
+df |>
+  filter(score_dor != 0) |> 
   ggplot(aes(x = ganho_peso_gestacional,
              y = score_dor)) +
   geom_point(size = 2)+
@@ -134,6 +137,7 @@ df |>
 ## Correlações
 ```{r fig.height=11, fig.width=11}
 df_numeric <- df |> 
+  filter(score_dor != 0) |> 
   select(where(is.numeric)) 
 
 M <- cor(df_numeric)
@@ -152,16 +156,24 @@ corrplot::corrplot(M,
 ```
 
 # Modelos de regressão linear
+
+## Filtro para retirar mulheres sem dor
+```{r}
+df_model <- 
+  df |> 
+  filter(score_dor != 0) 
+```
+
 ## Modelo não ajustado
 ```{r}
-model <- lm(score_dor ~ ganho_peso_gestacional, df)
+model <- lm(score_dor ~ ganho_peso_gestacional, df_model)
 
 sjPlot::tab_model(model)
 ```
 
 ## Modelo ajustado por idade, imc pré gestacional, atv. física (O que mais?)
 ```{r}
-modelo_ajustado <- lm(score_dor ~ ganho_peso_gestacional + idade + imc_pre_gestacional + atvfisica_sim_1_n_2, df)
+modelo_ajustado <- lm(score_dor ~ ganho_peso_gestacional + idade + imc_pre_gestacional + peso_nascer, df)
 
 sjPlot::tab_model(modelo_ajustado)
 ```
