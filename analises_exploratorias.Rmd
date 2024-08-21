@@ -12,6 +12,7 @@ output: github_document
 library(readxl)
 library(tidyverse)
 library(sjPlot)
+library(glue)
 ```
 
 ## Carregar os dados
@@ -38,6 +39,13 @@ df <-
     tabaco_sim_1_n_2 = as.factor(tabaco_sim_1_n_2),
     atvfisica_sim_1_n_2 = as.factor(atvfisica_sim_1_n_2)
   ) |>
+  mutate(
+    peso_nascer_categ = case_when(
+      peso_nascer < 2500 ~ "baixo_peso",
+      peso_nascer >= 2500 & peso_nascer < 4000 ~ "normal",
+      peso_nascer >= 4000 ~ "acima_peso"
+    )
+  ) |> 
   as.data.frame()
 ```
 
@@ -65,23 +73,40 @@ freq_lombar <- df |>
 
 freq_lombar
 ```
-
+glue(   )
 ### Gráfico - *Prevalência de dor lombar*
 ```{r}
 freq_lombar |> 
+  mutate(
+    local_dor = case_when(
+      local_dor == "lombar" ~ "Com dor lombar",
+      local_dor == "sem dor" ~ "Sem lombar"
+    )
+  ) |> 
   ggplot(aes(x = local_dor,
-             y = freq, 
+             y = freq,
              fill = local_dor,
-             label = round(freq, 1))) +
-  geom_col() +
+             label = glue('{round(freq, 0)}%'))) +
+  geom_col(colour = "black", 
+           show.legend = FALSE) +
   geom_text(position = position_stack(vjust = 0.5)) +
-  labs(title = "Prevalência de dor lombar") +
+  # labs(title = "Prevalência de dor lombar") +
+  xlab(label = "") +
+  ylab(label = "Frequência relativa (%)")+
+  ylim(0,100) +
+  scale_fill_manual(values = c("white", "#737B94")) +
   theme_classic()
 ```
 
 ## Prevalência da classificação de dor
 ```{r}
 freq_class_dor <- df |>
+  mutate(
+    classificacao = case_when(
+      classificacao == "moderado" ~ "Dor moderada",
+      classificacao == "grave" ~ "Dor grave"
+    )
+  ) |> 
   filter(score_dor != 0) |> 
   group_by(classificacao)  |> 
   summarise(n = n()) |>  
@@ -98,13 +123,17 @@ freq_class_dor |>
   ggplot(aes(x = fct_reorder(classificacao, freq,.desc = TRUE), classificacao,
              y = freq,
              fill = classificacao,
-             label = round(freq, 1))) +
-  geom_col() +
+             label = glue('{round(freq, 0)}%'))) +
+  geom_col(colour = "Black",
+           show.legend = FALSE) +
   geom_text(position = position_stack(vjust = 0.5)) +
   xlab("") +
-  labs(title = "Prevalência da Classificação da dor lombar") +
+  # labs(title = "Prevalência da Classificação da dor lombar") +
+  xlab(label = "") +
+  ylab(label = "Frequência relativa (%)")+
+  ylim(0,100) +
+  scale_fill_manual(values = c( "#737B94", "white")) +
   theme_classic()
-
 ```
 
 ## Gráfico de dispersão
@@ -128,9 +157,11 @@ df |>
   ggplot(aes(x = ganho_peso_gestacional,
              y = score_dor)) +
   geom_point(size = 2)+
-  geom_smooth(method = "lm")+
-  labs(title = "Gráfigo de dispersão",
-       subtitle = "Escore de dor vs. ganho de peso")+
+  geom_smooth(colour = "black",method = "lm")+
+  # labs(title = "Gráfigo de dispersão",
+  #      subtitle = "Escore de dor vs. ganho de peso")+
+  xlab("Percentual de ganho de peso gestacional") +
+  ylab("Escore de dor lombar") +
   theme_classic()
 
 ```
@@ -155,6 +186,14 @@ corrplot::corrplot(M,
                    order="AOE")
 ```
 
+## Correlação de Pearson
+```{r}
+correlacao <- cor.test(df_numeric$score_dor,
+                       df_numeric$ganho_peso_gestacional)
+
+correlacao
+```
+
 # Modelos de regressão linear
 
 ## Filtro para retirar mulheres sem dor
@@ -173,7 +212,7 @@ sjPlot::tab_model(model)
 
 ## Modelo ajustado por idade, imc pré gestacional, atv. física (O que mais?)
 ```{r}
-modelo_ajustado <- lm(score_dor ~ ganho_peso_gestacional + idade + imc_pre_gestacional + peso_nascer, df)
+modelo_ajustado <- lm(score_dor ~ ganho_peso_gestacional + idade + peso_pre_gestacional + peso_nascer_categ + numeros_gestacoes, df_model)
 
 sjPlot::tab_model(modelo_ajustado)
 ```
